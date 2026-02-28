@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anotador de Truco Pro</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #1e272e;
+            color: white;
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Cartel de Ganador */
+        #cartel-ganador {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .texto-ganador {
+            font-size: 3rem;
+            color: #ffca28;
+            text-shadow: 0 0 20px #ff8f00;
+            animation: titilar 0.5s infinite alternate;
+        }
+
+        @keyframes titilar {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0.5; transform: scale(1.1); }
+        }
+
+        /* Interfaz del anotador */
+        .marcador { display: flex; flex: 1; }
+        .equipo {
+            flex: 1;
+            border: 1px solid #485460;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .nombre { font-size: 1.2rem; color: #ffa801; }
+        .puntos { font-size: 3.5rem; margin: 5px 0; }
+
+        .area-fosforos {
+            display: grid;
+            grid-template-columns: repeat(2, 50px);
+            gap: 15px;
+        }
+
+        .caja-cinco {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            border: 1px dashed rgba(255,255,255,0.05);
+        }
+
+        .palito {
+            position: absolute;
+            background: #e67e22;
+            border-radius: 3px;
+            box-shadow: 1px 1px 2px black;
+        }
+
+        /* Fósforo de madera con cabeza roja */
+        .palito::after {
+            content: '';
+            position: absolute;
+            background: #c0392b;
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+
+        .p1 { left: 0; top: 0; bottom: 0; width: 5px; } .p1::after { top: -2px; left: -1px; }
+        .p2 { left: 0; right: 0; top: 0; height: 5px; } .p2::after { right: -2px; top: -1px; }
+        .p3 { right: 0; top: 0; bottom: 0; width: 5px; } .p3::after { bottom: -2px; left: -1px; }
+        .p4 { left: 0; right: 0; bottom: 0; height: 5px; } .p4::after { left: -2px; top: -1px; }
+        .p5 { left: 0; top: 22px; right: 0; height: 5px; transform: rotate(-45deg); background: #d35400; }
+
+        .controles { display: flex; height: 120px; }
+        button { flex: 1; font-size: 1.5rem; border: none; color: white; cursor: pointer; }
+        .btn-nos { background-color: #05c46b; }
+        .btn-ell { background-color: #3c40c6; }
+        .btn-restar { background-color: #485460; flex: 0.4; font-size: 2rem; }
+    </style>
+</head>
+<body>
+
+    <div id="cartel-ganador">
+        <h1 class="texto-ganador">¡GANASTE<br>CAMPEÓN!</h1>
+        <p style="color: white;">Festejá, te lo merecés.</p>
+    </div>
+
+    <div class="marcador">
+        <div class="equipo">
+            <div class="nombre">NOSOTROS</div>
+            <div id="num-nos" class="puntos">0</div>
+            <div id="fos-nos" class="area-fosforos"></div>
+        </div>
+        <div class="equipo">
+            <div class="nombre">ELLOS</div>
+            <div id="num-ell" class="puntos">0</div>
+            <div id="fos-ell" class="area-fosforos"></div>
+        </div>
+    </div>
+
+    <div class="controles">
+        <button class="btn-restar" onclick="sumar('nos', -1)">-</button>
+        <button class="btn-nos" onclick="sumar('nos', 1)">+ NOS</button>
+        <button class="btn-ell" onclick="sumar('ell', 1)">+ ELLOS</button>
+        <button class="btn-restar" onclick="sumar('ell', -1)">-</button>
+    </div>
+
+<script>
+    let pts = { nos: 0, ell: 0 };
+    let bloqueado = false; // Para evitar clicks mientras festeja
+
+    function sumar(quien, val) {
+        if (bloqueado) return;
+        
+        pts[quien] += val;
+        if (pts[quien] < 0) pts[quien] = 0;
+        
+        // Chequear si ganó
+        if (pts[quien] >= 30) {
+            pts[quien] = 30;
+            festejar();
+        }
+        
+        render();
+    }
+
+    function festejar() {
+        bloqueado = true;
+        const cartel = document.getElementById('cartel-ganador');
+        cartel.style.display = 'flex';
+
+        // Duración: 5 segundos (5000 milisegundos)
+        setTimeout(() => {
+            cartel.style.display = 'none';
+            bloqueado = false;
+            // Opcional: reiniciar los puntos al terminar el festejo
+            // pts = { nos: 0, ell: 0 }; 
+            // render();
+        }, 5000);
+    }
+
+    function render() {
+        document.getElementById('num-nos').innerText = pts.nos;
+        document.getElementById('num-ell').innerText = pts.ell;
+        dibujar('nos');
+        dibujar('ell');
+    }
+
+    function dibujar(q) {
+        const div = document.getElementById('fos-' + q);
+        div.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            const caja = document.createElement('div');
+            caja.className = 'caja-cinco';
+            const cantidad = Math.min(5, Math.max(0, pts[q] - (i * 5)));
+            for (let p = 1; p <= cantidad; p++) {
+                const palito = document.createElement('div');
+                palito.className = 'palito p' + p;
+                caja.appendChild(palito);
+            }
+            div.appendChild(caja);
+        }
+    }
+
+    render();
+</script>
+</body>
+</html>
